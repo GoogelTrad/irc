@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "server.hpp"
-
+int serverSocket;
 
 void parseNicknameAndUsername(const std::string& message, std::string &nickname, std::string &username) 
 {
@@ -30,11 +30,22 @@ void parseNicknameAndUsername(const std::string& message, std::string &nickname,
         username = message.substr(userPos);
     }
 }
+void closeClientSocket(int clientSocket) {
+    std::cout << "clientSocket : " << clientSocket << std::endl;
+    close(clientSocket);
 
+}
+
+void signalCtrlC(int signal)
+{
+    (void)signal;
+    close(serverSocket);
+    exit(1);
+}
 
 int main(int ac, char **av) 
 {
-    int serverSocket, maxClients = MAX_CLIENTS;
+    int  maxClients = MAX_CLIENTS;
     struct sockaddr_in clientAddr;
     struct sockaddr_in serverAddr;
     socklen_t clientAddrSize = sizeof(clientAddr);
@@ -48,7 +59,7 @@ int main(int ac, char **av)
         std::cerr << "Error creating server socket" << std::endl;
         return 1;
     }
-
+    signal(SIGINT, signalCtrlC);
     int opt = 1;
     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
     serverAddr.sin_family = AF_INET;
@@ -97,7 +108,12 @@ int main(int ac, char **av)
             std::cerr << "Error in poll" << std::endl;
             break;
         }
-
+        /*
+        if (clientSocketToClose != -1) {
+            closeClientSocket(clientSocketToClose);
+            clientSocketToClose = -1;
+        }
+        */
         if (fds[0].revents & POLLIN) 
         {
             int newSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrSize);
@@ -106,52 +122,32 @@ int main(int ac, char **av)
                 std::cerr << "Error accepting connection" << std::endl;
                 continue;
             }
+            
+            /*
             memset(buffer, 0, BUFFER_SIZE);
-            std::string nickname, username;
             int bytesRead = recv(newSocket, buffer, BUFFER_SIZE, 0);
+            //std::cout << buffer << std::endl;
             if (bytesRead < 0) 
             {
                 std::cerr << "error recv" << std::endl;
             }
+            */
             int index = -1;
-            int check = availableUserNickName(clientInfo, buffer);
             for (int i = 0; i < maxClients; ++i) 
             {
                 if (clientInfo[i].socket == 0) 
                 {
-                    if (check == 0)
-                    {
-                        clientInfo[i].socket = newSocket;
-                        index = i;
-                        break;
-                    }
-                    else
-                        index = -2;
+                    clientInfo[i].socket = newSocket;
+                    index = i;
+                    break;
                 }
             }
-            if (index > -1)
-            {
-                if (passwCheck(av[ac - 1], buffer) == -1)
-                {
-                    send(newSocket, "The server requires a password to be joined (verify if you typed it well) \n", 76, 0);
-                    close(newSocket);
-                }
-                else
-                    newUser(buffer, clientInfo, index);
-            }
-            else if (index == -1)
+            if (index == -1)
             {
                 std::cerr << "Maximum clients reached, cannot accept more connections." << std::endl;
                 close(newSocket);
             }
-            else
-            {
-                if (check == -1)
-                    send(newSocket, "Username or Nickname already in use please change \n", 52, 0);
-                else 
-                    send(newSocket, "Max length for Nickname is 9 ! \n", 33, 0);
-                close(newSocket);
-            } 
+            std::cout << index << std::endl;
         }
 
         for (int i = 0; i < maxClients; ++i) 
@@ -166,11 +162,35 @@ int main(int ac, char **av)
                     clientInfo[i].socket = 0;
                 } else
                 {
-                    command((const char*)buffer, clientInfo, clientInfo[i], channels);
+                    bool eof = false;
+                    int index = 0;
+                    while(buffer[index])
+                    {
+                        if (buffer[index] == '\n')
+                        {
+                            eof = true;
+                            clientInfo[i].buffer_perso += buffer;
+                        }
+                        index++;
+                    }
+                    if(eof)
+                    {
+                        std::string addCariage = addCarRet(clientInfo[i].buffer_perso.c_str());
+                        std::cout << "addcariage = " << addCariage << std::endl;
+                        command(addCariage.c_str(), clientInfo, clientInfo[i], channels, av[ac - 1]);
+                        clientInfo[i].buffer_perso.clear();
+                    }
+                    else
+                    {
+                        std::cout << "pas de bashslash" << std::endl;
+                        clientInfo[i].buffer_perso += buffer;
+                        std::cout << "buffer perso = " << clientInfo[i].buffer_perso << std::endl;
+                    }
                 }
             }
         }
     }
+    // ping \ pong ??? dans le while inf si pas de reponse, close le socket;
     for (int i = 0; i < maxClients; ++i) 
     {
         if (clientInfo[i].socket > 0)

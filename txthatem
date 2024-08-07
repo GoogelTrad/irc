@@ -1,0 +1,54 @@
+//change arg and parsing (if tmp.find(" ") == tmp.npos && isinchannel alors send topic)
+// CHECK QUIT FORMAT OF SEND (REASON FOR STILL IN SERV CLIENTS) + CHECK HEXCHAT SEND format. ()
+// SAME FOR KICK (FORMAT SEND)
+
+//should i close servsocket (Like a SIGINT) if last user quit ?? 
+    ping \ pong ???
+
+SIGNAUX ...............
+
+CTRL D, Client & prends un buffer qui stock till \n
+
+Quand j'ai la fct qui capte les signaux 
+Penser si multiple CTRLD a la suite (detruire  ?? )
+
+Ne pas envoyer dans command till buffer.strchr("\n")
+
+
+
+
+    {
+    if (strchr(buffer, 10) != NULL)
+    {
+        std::string addCariage = addCarRet(buffer);
+        command(addCariage.c_str(), clientInfo, clientInfo[i], channels, av[ac - 1]);
+
+    }
+    else
+        clientInfo.buffer = Ctrl D + ctrld etc ... 
+    }
+
+std::string ft_chanstate(channel &channel)
+{
+    std::string chanState = channel.name + ": CHANNEL MODE :\n-topicModoOnly : ";
+    if (channel.topRights == true)
+        chanState += "ON";
+    else
+        chanState += "OFF";
+    chanState += "\r\n-invMode : ";
+    if (channel.invMode == true)
+        chanState += "ON";
+    else
+        chanState += "OFF";
+    chanState += "\r\n-usrLimit : ";
+    if (channel.maxUser != 99)
+        chanState += "ON";
+    else
+        chanState += "OFF";
+    chanState += "\r\n-passWord : ";
+    if (channel.passMode == true)
+        chanState += "ON : " + channel.passW;
+    else
+        chanState += "OFF";
+    chanState += "\r\n";
+}

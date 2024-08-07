@@ -28,7 +28,8 @@
 # include <cctype>
 # include <algorithm>
 # include <vector>
-
+# include <csignal>
+# include <stdlib.h>
 # define MAX_CLIENTS 10
 # define BUFFER_SIZE 1024
 
@@ -42,8 +43,13 @@ public:
 	std::string nickName;
 	std::string userName;
 	std::string lastmessage;
+	std::string buffer_perso;
 	int			socket;
 	int			currentChannel;
+    bool        pass;
+    bool        nick;
+    bool        user;
+    bool        ok;
 };
 
 
@@ -63,21 +69,37 @@ struct channel
 };
 
 int         availableUserNickName(Client *clientInfo, char *buffer);
-void    	command(const char* buffer, Client *clientsInfo, Client &clientInfo, std::vector<channel>&channels);
+void    	command(const char* buffer, Client *clientsInfo, Client &clientInfo, std::vector<channel>&channels, char *passw);
 void    	ft_join(const char * buffer, int fd, Client &clientInfo, std::vector<channel>&channels, Client *clientsInfo);
 int 		passwCheck(char *av, char *buffer);
 void 		newUser(char *buffer, Client *clientInfo, int i);
 std::string receivedMsg(const char *buffer, Client &clientInfo);
 void 		parsePrivmsg(const std::string& message, std::string &content, std::string &channel_name);
 char *		convert(const char *s);
-void         parsMode(const char *buffer, Client *clientsInfo, std::vector<channel>&channels, Client &clientInfo);
+void        parsMode(const char *buffer, Client *clientsInfo, std::vector<channel>&channels, Client &clientInfo);
 int         chanName(std::string nameChannel);
-void         parsInv(const char *buffer, Client *clientsInfo, std::vector<channel>&channels, Client &clientInfo);
+void        parsInv(const char *buffer, Client *clientsInfo, std::vector<channel>&channels, Client &clientInfo);
 std::string ft_topic(const char  *buffer);
 int         ft_invit(std::vector<channel>&channels,  Client &clientsInfo, int i);
 int         ft_isModo(Client *clientInfo, std::vector<channel>&channels, std::string chanl);
 void        clearClientInfo(Client &ClientInfo);
 int         ft_isInChannel(Client &clientInfo, std::vector<channel>&channels, size_t i);
+int         availableNick(Client *clientsInfo, std::string nick);
+int         availableUser(Client *clientsInfo, std::string user);
+void        parsCap(Client *clientsInfo, char *passw, Client &clientInfo, std::string buf);
+int         ft_isOk(Client &clientInfo, int fct, std::string tosend, std::string arg);
+std::string addCarRet(const char *buffer);
+void        topic(const char *buffer, std::vector<channel>&channels, Client &clientInfo);
+void        privMsg(const char *buffer, Client *clientsInfo, std::vector<channel>&channels, Client &clientInfo);
+void        pass(const char *buffer, Client &clientInfo, char *passw);
+void        cmd_user(const char *buffer, Client &clientInfo, Client *clientsInfo);
+void        cmd_nick(const char *buffer, Client &clientInfo, Client *clientsInfo);
+void        cmd_part(const char *buffer, std::vector<channel>&channels, Client &clientInfo);
+void        cmd_quit(Client &clientInfo, std::vector<channel>&channels, const char *buffer);
+void        cmd_kick(Client &clientInfo, std::vector<channel>&channels, Client *clientsInfo, const char *buffer);
+int         ft_which_client(Client *clientsInfo, std::string usr);
+std::string ft_chanstate(channel &channel);
+std::string ft_whoAtJoin(channel &channel, Client *clientsInfo);
 
 /*struct identity
 {
